@@ -5,6 +5,8 @@
 #error "F_CPU is not defined"
 #endif
 
+#include <stdint.h>
+
 #ifndef BAUD
 #define BAUD 9600
 #endif

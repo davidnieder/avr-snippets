@@ -1,8 +1,8 @@
-#include <avr/interrupt.h>
 
 #include "uart.h"
-#include <util/setbaud.h>
 
+#include <avr/interrupt.h>
+#include <util/setbaud.h>
 
 
 void uart_init()
