@@ -1,9 +1,10 @@
-
 #include "uart.h"
 
 #include <avr/interrupt.h>
 #include <util/setbaud.h>
 
+
+struct ringBuffer rxBuffer, txBuffer;
 
 void uart_init()
 {

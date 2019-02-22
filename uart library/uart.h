@@ -21,16 +21,13 @@
 
 #endif
 
-
 #define BUFFERSIZE 32
-
 struct ringBuffer   {
     uint8_t *start;
     uint8_t *end;
     uint8_t buffer[BUFFERSIZE];
 
-} rxBuffer, txBuffer;
-
+};
 
 /* prototypes */
 void uart_init();
