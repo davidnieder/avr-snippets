@@ -37,7 +37,7 @@ void uart_init()
 }
 
 /* sends single character
- * returns -1 on error
+ * returns 1 on error
  */
 uint8_t uart_putc(char c)
 {
@@ -46,7 +46,7 @@ uint8_t uart_putc(char c)
         txBuffer.start == txBuffer.buffer) ||
         txBuffer.end == txBuffer.start-1) {
 
-        return -1;
+        return 1;
     }
 
     /* add element to buffer */
@@ -71,27 +71,46 @@ uint8_t uart_puts(char *s)
 {
     uint8_t count = 0;
     while(*s)   {
-
-        if(uart_putc(*s) != -1) {
-            count++;
-            s++;
-        }
-        else
-            break;
+		if (uart_putc(*s) != 0)
+			break;
+		else {
+			count++;
+			s++;
+		}
     }
 
     return count;
 }
 
+/* converts the given byte into a 2-digit hex representation
+ * and sends the two characters
+ */
+uint8_t uart_putb(char byte)
+{
+	uint8_t hn, ln;
+
+	hn = ((byte & 0xF0) >> 4);
+	ln = (byte & 0x0F);
+	hn = hn < 10 ? hn + '0' : hn + 'A'-10;
+	ln = ln < 10 ? ln + '0' : ln + 'A'-10;
+
+	if (uart_putc(hn) != 0)
+		return 1;
+	if (uart_putc(ln) != 0)
+		return 1;
+
+	return 0;
+}
+
 /* receives a character and stores it in 'dest'
  * returnes -1 if there is nothing in the buffer
  */
-int8_t uart_getc(char *dest)
+uint8_t uart_getc(char *dest)
 {
     /* is the buffer empty? */
     if(rxBuffer.start == rxBuffer.end)  {
 
-        return -1;
+        return 1;
     }
 
     /* get element from buffer */
@@ -145,4 +164,3 @@ ISR(TX_REG_EMPTY_INT)
     if(txBuffer.start == txBuffer.end)
         UCSRB &= ~(1<<UDRIE);
 }
-

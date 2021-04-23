@@ -1,9 +1,6 @@
-# vim:set tabstop=8 softtabstop=8 shiftwidth=8 noexpandtab 
-#
 # make all = compile, link and convert to ihex
 # make clean = remove files created by make all
 # make program = flash the controller with avrdude
-#
 
 # controller
 MCU = atmega8
@@ -12,13 +9,10 @@ MCU = atmega8
 #MCU = atmega8535
 
 # frequency
-F_CPU = 8000000
+F_CPU = 10000000
 
 # optimization level
 OPT = s
-
-# hex format
-FORMAT = ihex
 
 # application name + source file where main() is defined
 TARGET = echo
@@ -53,7 +47,7 @@ REMOVE = rm -f
 # default target
 all: $(SRC)
 	$(CC) $(CFLAGS) -o $(TARGET).elf $(SRC)
-	$(OBJCOPY) -O $(FORMAT) $(TARGET).elf $(TARGET).hex
+	$(OBJCOPY) -O ihex $(TARGET).elf $(TARGET).hex
 
 # remove created files
 clean:

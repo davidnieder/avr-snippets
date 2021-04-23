@@ -14,7 +14,7 @@
 #if defined(__AVR_ATmega8__) || defined(__AVR_ATmega32__)
     #define RX_COMPL_INT USART_RXC_vect
     #define TX_REG_EMPTY_INT USART_UDRE_vect
-    
+
 #elif defined(__AVR_ATtiny2313__) || defined(__AVR_ATmega8535__)
     #define RX_COMPL_INT USART_RX_vect
     #define TX_REG_EMPTY_INT USART_UDRE_vect
@@ -29,11 +29,36 @@ struct ringBuffer   {
 
 };
 
-/* prototypes */
+/*
+ * initializes uart hardware and library - call once at start.
+ * enable interrupts before sending data.
+ */
 void uart_init();
-uint8_t uart_putc(char);
-uint8_t uart_puts(char*);
-int8_t uart_getc(char*);
 
+/*
+ * sends a single character over the uart.
+ * returns non-zero on error
+ */
+uint8_t uart_putc(char c);
+
+/*
+ * sends null-terminated character string
+ * return number of sent characters
+ */
+uint8_t uart_puts(char *s);
+
+/*
+ * sends the 2-digit hex representation of byte
+ * (eg (dec)42 becomes "2A")
+ *
+ * returns non-zero on error
+ */
+uint8_t uart_putb(char byte);
+
+/*
+ * reads one character from the uart and stores it in 'c'
+ * returns non-zero if the input buffer is empty (nothing received)
+ */
+uint8_t uart_getc(char *c);
 
 #endif

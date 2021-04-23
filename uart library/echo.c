@@ -1,4 +1,4 @@
-/* echos every character using the uart library */
+/* echos every received character using the uart library */
 
 #include <avr/interrupt.h>
 #include "uart.h"
@@ -11,10 +11,9 @@ int main()
     uart_init();
     sei();
 
-    while(1)   {
+    while (1)   {
 
-        if(uart_getc(&c) == 0)
+        if (uart_getc(&c) == 0)
             uart_putc(c);
     }
 }
-
