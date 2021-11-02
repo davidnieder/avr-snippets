@@ -8,7 +8,25 @@
 #include <stdint.h>
 
 #ifndef BAUD
+#ifdef UART_BAUD_RATE
+#define BAUD UART_BAUD_RATE
+#else
 #define BAUD 9600
+#endif
+#endif
+
+#ifndef RX_BUFFERSIZE
+#define RX_BUFFERSIZE 16
+#endif
+
+#ifndef TX_BUFFERSIZE
+#define TX_BUFFERSIZE 32
+#endif
+
+/* if set to 1 sending will block execution until all data
+ * is written to the output buffer */
+#ifndef TX_BLOCK_ON_FULL_BUFFER
+#define TX_BLOCK_ON_FULL_BUFFER 1
 #endif
 
 #if defined(__AVR_ATmega8__) || defined(__AVR_ATmega32__)
@@ -21,13 +39,6 @@
 
 #endif
 
-#define BUFFERSIZE 32
-struct ringBuffer   {
-    uint8_t *start;
-    uint8_t *end;
-    uint8_t buffer[BUFFERSIZE];
-
-};
 
 /*
  * initializes uart hardware and library - call once at start.

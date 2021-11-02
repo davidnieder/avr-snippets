@@ -4,7 +4,9 @@
 #include <util/setbaud.h>
 
 
-struct ringBuffer rxBuffer, txBuffer;
+static uint8_t *volatile rxBufStart, *volatile rxBufEnd;
+static uint8_t *volatile txBufStart, *volatile txBufEnd;
+static uint8_t rxBuf[RX_BUFFERSIZE], txBuf[TX_BUFFERSIZE];
 
 void uart_init()
 {
@@ -30,10 +32,10 @@ void uart_init()
     UCSRB |= (1<<RXCIE) | (1<<RXEN) | (1<<TXEN);
 
     /* init ring buffer pointers */
-    rxBuffer.start = rxBuffer.buffer;
-    rxBuffer.end = rxBuffer.buffer;
-    txBuffer.start = txBuffer.buffer;
-    txBuffer.end = txBuffer.buffer;
+    rxBufStart = rxBuf;
+    rxBufEnd = rxBuf;
+    txBufStart = txBuf;
+    txBufEnd = txBuf;
 }
 
 /* sends single character
@@ -42,21 +44,24 @@ void uart_init()
 uint8_t uart_putc(char c)
 {
     /* is the buffer full? */
-    if((txBuffer.end == &txBuffer.buffer[BUFFERSIZE-1] &&
-        txBuffer.start == txBuffer.buffer) ||
-        txBuffer.end == txBuffer.start-1) {
-
+#if TX_BLOCK_ON_FULL_BUFFER
+	while((txBufEnd == &txBuf[TX_BUFFERSIZE-1] && txBufStart == txBuf) ||
+        txBufEnd == txBufStart-1) {}
+#else
+    if((txBufEnd == &txBuf[TX_BUFFERSIZE-1] && txBufStart == txBuf) ||
+        txBufEnd == txBufStart-1) {
         return 1;
     }
+#endif
 
     /* add element to buffer */
-    *txBuffer.end = c;
+    *txBufEnd = c;
 
     /* set pointer to next field */
-    if(txBuffer.end == &txBuffer.buffer[BUFFERSIZE-1])
-        txBuffer.end = txBuffer.buffer;
+    if(txBufEnd == &txBuf[TX_BUFFERSIZE-1])
+        txBufEnd = txBuf;
     else
-        txBuffer.end++;
+        txBufEnd++;
 
     /* enable tx register empty interrupt */
     UCSRB |= (1<<UDRIE);
@@ -103,24 +108,23 @@ uint8_t uart_putb(char byte)
 }
 
 /* receives a character and stores it in 'dest'
- * returnes -1 if there is nothing in the buffer
+ * returnes 1 if there is nothing in the buffer
  */
 uint8_t uart_getc(char *dest)
 {
     /* is the buffer empty? */
-    if(rxBuffer.start == rxBuffer.end)  {
-
+    if(rxBufStart == rxBufEnd)  {
         return 1;
     }
 
     /* get element from buffer */
-    *dest = *rxBuffer.start;
+    *dest = *rxBufStart;
 
     /* set pointer to next field */
-    if(rxBuffer.start == &rxBuffer.buffer[BUFFERSIZE-1])
-        rxBuffer.start = rxBuffer.buffer;
+    if(rxBufStart == &rxBuf[RX_BUFFERSIZE-1])
+        rxBufStart = rxBuf;
     else
-        rxBuffer.start++;
+        rxBufStart++;
 
     return 0;
 }
@@ -132,19 +136,19 @@ ISR(RX_COMPL_INT)
     rc = UDR;
 
     /* store in buffer */
-    if((rxBuffer.end == &rxBuffer.buffer[BUFFERSIZE-1] &&
-        rxBuffer.start == rxBuffer.buffer) ||
-        rxBuffer.end == rxBuffer.start-1)   {
+    if((rxBufEnd == &rxBuf[RX_BUFFERSIZE-1] &&
+        rxBufStart == rxBuf) ||
+        rxBufEnd == rxBufStart-1)   {
 
         return;
     }
     else    {
-        *rxBuffer.end = rc;
+        *rxBufEnd = rc;
 
-        if(rxBuffer.end == &rxBuffer.buffer[BUFFERSIZE-1])
-            rxBuffer.end = rxBuffer.buffer;
+        if(rxBufEnd == &rxBuf[RX_BUFFERSIZE-1])
+            rxBufEnd = rxBuf;
         else
-            rxBuffer.end++;
+            rxBufEnd++;
     }
 }
 
@@ -152,15 +156,15 @@ ISR(RX_COMPL_INT)
 ISR(TX_REG_EMPTY_INT)
 {
     /* send byte */
-    UDR = *txBuffer.start;
+    UDR = *txBufStart;
 
     /* set pointer to next field */
-    if(txBuffer.start == &txBuffer.buffer[BUFFERSIZE-1])
-        txBuffer.start = txBuffer.buffer;
+    if(txBufStart == &txBuf[TX_BUFFERSIZE-1])
+        txBufStart = txBuf;
     else
-        txBuffer.start++;
+        txBufStart++;
 
     /* buffer empty? disable interrupt */
-    if(txBuffer.start == txBuffer.end)
+    if(txBufStart == txBufEnd)
         UCSRB &= ~(1<<UDRIE);
 }

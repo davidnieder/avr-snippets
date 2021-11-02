@@ -1,59 +1,67 @@
-# make all = compile, link and convert to ihex
-# make clean = remove files created by make all
-# make program = flash the controller with avrdude
+# make = compile, link and convert to ihex
+# make clean = remove files created by make
+# make flash = flash the controller with avrdude
 
 # controller
-#MCU = atmega8
+MCU = atmega8
 #MCU = atmega32
-MCU = attiny2313
+#MCU = attiny2313
 #MCU = atmega8535
 
-# frequency
+# clock frequency
 F_CPU = 10000000
 
 # optimization level
 OPT = s
 
-# application name + source file where main() is defined
-TARGET = echo
-
-# all c files
-SRC = $(TARGET).c uart.c
+# output file prefix
+TARGET = fw
 
 # c language standard
 CSTANDARD = c99
 
-# c compiler flags
+# compiler options
 CFLAGS = -mmcu=$(MCU)
 CFLAGS += -O$(OPT)
 CFLAGS += -Wall
 CFLAGS += -std=$(CSTANDARD)
 CFLAGS += -DF_CPU=$(F_CPU)
 
+# linker options
+LFLAGS = -mmcu=$(MCU)
+
 # avrdude
 AVRDUDE_PROGRAMMER = avr910
 AVRDUDE_PORT = /dev/ttyUSB0
 AVRDUDE_CONFIG = /etc/avrdude.conf
 AVRDUDE_WRITE_FLASH = -U flash:w:$(TARGET).hex:a
-
 AVRDUDE_FLAGS = -C $(AVRDUDE_CONFIG) -p $(MCU) -P $(AVRDUDE_PORT) -c $(AVRDUDE_PROGRAMMER)
 
-# programs and commands
+# programs
 CC = avr-gcc
 OBJCOPY = avr-objcopy
 AVRDUDE = avrdude
-REMOVE = rm -f
+RM = rm -f
 
-# default target
-all: $(SRC)
-	$(CC) $(CFLAGS) -o $(TARGET).elf $(SRC)
+# compile these files
+SRCS = $(wildcard *.c)
+# link these files
+OBJS = $(patsubst %.c,%.o,$(SRCS))
+
+
+$(TARGET).hex: $(TARGET).elf
 	$(OBJCOPY) -O ihex $(TARGET).elf $(TARGET).hex
 
-# remove created files
-clean:
-	$(REMOVE) $(TARGET).elf $(TARGET).hex
+$(TARGET).elf: $(OBJS)
+	$(CC) $(LFLAGS) -o $@ $(OBJS)
 
-# program the controller
-program: $(TARGET).hex
+%.o: %.c %.h
+	$(CC) -c $(CFLAGS) -o $@ $<
+
+flash: $(TARGET).hex
 	$(AVRDUDE) $(AVRDUDE_FLAGS) $(AVRDUDE_WRITE_FLASH)
 
+clean:
+	$(RM) $(TARGET).elf $(TARGET).hex $(OBJS)
+
+.PHONY: clean
